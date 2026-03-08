@@ -95,14 +95,21 @@ fi
 
 # 检查 OpenClaw 是否已配置
 if [ ! -f "/root/.openclaw/config.yaml" ]; then
-    echo "OpenClaw 首次启动..."
-    echo "  请通过 docker exec 进入容器完成配置:"
-    echo "    docker exec -it openclaw-feishu bash"
-    echo "    openclaw onboard --install-daemon"
+    echo "OpenClaw 首次启动，自动执行初始化配置..."
 
-    # 保持容器运行
-    tail -f /dev/null
+    # 自动运行 openclaw onboard --install-daemon
+    echo "  执行: openclaw onboard --install-daemon"
+    if openclaw onboard --install-daemon; then
+        echo "  ✓ OpenClaw 初始化成功！"
+    else
+        echo "  ✗ OpenClaw 初始化失败，但容器将继续运行"
+        echo "  请手动执行: openclaw onboard --install-daemon"
+    fi
+
+    echo ""
+    echo "启动 OpenClaw Gateway..."
 else
+    echo "检测到已有配置文件，跳过初始化步骤"
     echo "启动 OpenClaw Gateway..."
 
     # 创建日志目录
