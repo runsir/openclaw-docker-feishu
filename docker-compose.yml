@@ -20,8 +20,8 @@ services:
 
     # 卷挂载 - 持久化 OpenClaw 配置和数据
     volumes:
-      - openclaw-data:/root/.openclaw
-      - openclaw-logs:/root/.openclaw/logs
+      - ${OPENCLAW_DATA_DIR:-./data}:/root/.openclaw
+      - ${OPENCLAW_LOG_DIR:-./logs}:/root/.openclaw/logs
 
     # 健康检查
     healthcheck:
@@ -36,9 +36,3 @@ services:
     privileged: true
     cap_add:
       - NET_ADMIN
-
-volumes:
-  openclaw-data:
-    name: openclaw-data
-  openclaw-logs:
-    name: openclaw-logs
