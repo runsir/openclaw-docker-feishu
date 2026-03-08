@@ -47,16 +47,38 @@ nano .env
 必须配置以下变量：
 
 ```bash
-# 飞书配置
+# 飞书应用配置
 FEISHU_APP_ID=cli_xxxxxxxxxxxxxxx
 FEISHU_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # 大模型配置
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+BASE_URL=https://api.openai.com/v1
+MODEL_ID=gpt-4o
 
-# OpenClaw Token（可选，用于认证）
-OPENCLAW_TOKEN=your-openclaw-token-here
+# Gateway 配置
+OPENCLAW_GATEWAY_TOKEN=your-gateway-token
 ```
+
+### 配置说明
+
+#### 1. 飞书配置
+- `FEISHU_APP_ID` 和 `FEISHU_APP_SECRET`：在飞书开放平台获取
+- `FEISHU_OFFICIAL_PLUGIN_ENABLED`：是否启用飞书官方插件
+
+#### 2. 大模型配置
+- `API_KEY`：你的 API 密钥
+- `BASE_URL`：API 基础 URL（支持 OpenAI、Claude、阿里云等）
+- `MODEL_ID`：模型 ID（支持多个，用逗号分隔）
+- `CONTEXT_WINDOW`：上下文窗口大小
+- `MAX_TOKENS`：最大输出 tokens
+
+#### 3. Gateway 配置
+- `OPENCLAW_GATEWAY_TOKEN`：网关认证令牌
+- `OPENCLAW_GATEWAY_BIND`：绑定地址（lan/local/all）
+- `OPENCLAW_GATEWAY_PORT`：网关端口
+
+更多配置项请查看 `.env.example` 文件中的详细注释。
 
 ### 3. 构建并启动
 
