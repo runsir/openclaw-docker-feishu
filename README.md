@@ -19,11 +19,22 @@
 - Docker Compose >= 2.0
 - 飞书开放平台应用（获取 App ID 和 App Secret）
 
-### 1. 克隆项目
+### 方式 1：使用预构建镜像（推荐）
 
 ```bash
-git clone <repository-url>
+# 从阿里云镜像仓库拉取预构建的镜像
+docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+```
+
+### 方式 2：本地构建
+
+```bash
+# 克隆项目
+git clone https://github.com/runsir/openclaw-docker-feishu.git
 cd openclaw-docker-feishu
+
+# 构建镜像
+docker build -t openclaw-feishu:latest .
 ```
 
 ### 2. 配置环境变量
@@ -271,15 +282,67 @@ openclaw-docker-feishu/
 └── memory/             # 工作日志
 ```
 
+## CI/CD 自动构建
+
+本项目使用 GitHub Actions 自动构建并推送 Docker 镜像到阿里云容器镜像服务（ACR）。
+
+### 自动构建触发条件
+
+- **Push 到 main 分支**：自动构建并推送镜像（标签：`latest`, `main`）
+- **创建版本标签**：自动构建并推送带版本号的镜像（如 `v1.0.0`）
+- **Pull Request**：自动构建但不推送（用于测试）
+
+### 使用预构建镜像
+
+1. **拉取镜像**
+
+```bash
+docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+```
+
+2. **修改 docker-compose.yml**
+
+```yaml
+services:
+  openclaw-feishu:
+    image: registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+    # 不再需要 build 配置
+```
+
+3. **启动服务**
+
+```bash
+docker-compose up -d
+```
+
+### GitHub Secrets 配置
+
+在 GitHub 仓库中配置以下 Secrets：
+
+| Secret 名称 | 说明 |
+|------------|------|
+| `ALIYUN_REGISTRY` | 阿里云镜像仓库地址（如：registry.cn-hangzhou.aliyuncs.com） |
+| `ALIYUN_USERNAME` | 阿里云用户名 |
+| `ALIYUN_PASSWORD` | 阿里云密码（RAM AccessKey Secret） |
+| `IMAGE_NAMESPACE` | 命名空间（可选，默认为 `library`） |
+
+详细配置说明请查看 [`.github/workflows/README.md`](.github/workflows/README.md)
+
+### 手动触发构建
+
+进入仓库的 `Actions` 标签页，选择 `Build and Push Docker Image to Aliyun ACR`，点击 `Run workflow`。
+
 ## 更新升级
 
 ### 手动更新
 
 ```bash
-# 重新构建镜像
-docker-compose build
+# 方式 1: 使用预构建镜像
+docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+docker-compose up -d
 
-# 重启服务
+# 方式 2: 本地重新构建
+docker-compose build
 docker-compose up -d
 ```
 

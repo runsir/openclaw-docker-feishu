@@ -46,10 +46,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 RUN npm config set registry https://registry.npmmirror.com
 
 # ===== 安装 OpenClaw =====
-# 下载并安装 OpenClaw
+# 方式 1: 尝试使用官方安装脚本
 RUN curl -fsSL https://openclaw.ai/install.sh -o /tmp/install.sh && \
     chmod +x /tmp/install.sh && \
-    bash /tmp/install.sh
+    bash /tmp/install.sh || \
+    (echo "安装脚本失败，尝试使用 npm 安装..." && \
+     npm install -g openclaw@latest)
 
 # ===== 安装飞书官方插件 =====
 # 先安装飞书插件 CLI 工具
