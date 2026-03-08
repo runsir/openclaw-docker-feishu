@@ -53,6 +53,9 @@ FEISHU_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # 大模型配置
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# OpenClaw Token（可选，用于认证）
+OPENCLAW_TOKEN=your-openclaw-token-here
 ```
 
 ### 3. 构建并启动
