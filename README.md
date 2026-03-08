@@ -284,12 +284,7 @@ openclaw-docker-feishu/
 
 ## CI/CD 自动构建
 
-本项目使用 GitHub Actions 自动构建并推送 Docker 镜像。
-
-### 支持的镜像仓库
-
-- **Docker Hub**（必需）：`runsir/openclaw-feishu`
-- **阿里云 ACR**（可选）：国内用户可配置以获得更快的访问速度
+本项目使用 GitHub Actions 自动构建并推送 Docker 镜像到 Docker Hub。
 
 ### 自动构建触发条件
 
@@ -299,19 +294,11 @@ openclaw-docker-feishu/
 
 ### 使用预构建镜像
 
-**从 Docker Hub 拉取（推荐）：**
-
 ```bash
 docker pull runsir/openclaw-feishu:latest
 ```
 
-**从阿里云 ACR 拉取（国内用户更快）：**
-
-```bash
-docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
-```
-
-**使用 docker-compose：**
+修改 `docker-compose.yml`：
 
 ```yaml
 services:
@@ -320,7 +307,7 @@ services:
     # 不再需要 build 配置
 ```
 
-**启动服务：**
+启动服务：
 
 ```bash
 docker-compose up -d
@@ -328,21 +315,10 @@ docker-compose up -d
 
 ### GitHub Secrets 配置
 
-**必需配置（Docker Hub）：**
-
 | Secret 名称 | 说明 |
 |------------|------|
 | `DOCKER_USERNAME` | Docker Hub 用户名 |
 | `DOCKER_PASSWORD` | Docker Hub 密码或 Access Token |
-
-**可选配置（阿里云 ACR）：**
-
-| Secret 名称 | 说明 |
-|------------|------|
-| `ALIYUN_REGISTRY` | 阿里云镜像仓库地址 |
-| `ALIYUN_USERNAME` | 阿里云用户名 |
-| `ALIYUN_PASSWORD` | 阿里云密码 |
-| `IMAGE_NAMESPACE` | 命名空间 |
 
 详细配置说明请查看 [`.github/workflows/README.md`](.github/workflows/README.md)
 
@@ -355,15 +331,11 @@ docker-compose up -d
 ### 手动更新
 
 ```bash
-# 方式 1: 使用 Docker Hub 预构建镜像
+# 方式 1: 使用预构建镜像
 docker pull runsir/openclaw-feishu:latest
 docker-compose up -d
 
-# 方式 2: 使用阿里云 ACR 预构建镜像（国内用户更快）
-docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
-docker-compose up -d
-
-# 方式 3: 本地重新构建
+# 方式 2: 本地重新构建
 docker-compose build
 docker-compose up -d
 ```
