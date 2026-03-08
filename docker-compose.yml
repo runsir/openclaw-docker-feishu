@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  openclaw-feishu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openclaw-feishu
+    image: openclaw-feishu:latest
+    restart: unless-stopped
+
+    # 环境变量配置
+    env_file:
+      - .env
+
+    # 自动升级配置（使用 .env 中的值）
+    environment:
+      - AUTO_UPDATE=${AUTO_UPDATE:-false}
+      - UPDATE_CHECK_INTERVAL=${UPDATE_CHECK_INTERVAL:-3600}
+      - INSTALL_CLAWHUB=${INSTALL_CLAWHUB:-true}
+      - SKILLS_LIST=${SKILLS_LIST:-}
+
+    # 端口映射
+    ports:
+      - "${SSH_PORT:-2222}:22"
+      - "${OPENCLAW_PORT:-18789}:18789"
+
+    # 卷挂载 - 持久化 OpenClaw 配置和数据
+    volumes:
+      - openclaw-data:/root/.openclaw
+      - openclaw-logs:/root/.openclaw/logs
+
+    # 网络配置（使用默认 bridge 网络）
+    # 如果需要自定义网络，取消下面的注释
+    # networks:
+    #   - openclaw-network
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # 额外配置
+    hostname: openclaw-feishu
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  openclaw-network:
+    driver: bridge
+
+# 如果需要自定义网络，取消下面的注释
+# networks:
+#   openclaw-network:
+#     driver: bridge
+
+volumes:
+  openclaw-data:
+    name: openclaw-data
+  openclaw-logs:
+    name: openclaw-logs

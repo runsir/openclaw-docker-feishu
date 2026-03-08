@@ -1,0 +1,42 @@
+# 环境变量文件（敏感信息）
+.env
+
+# Docker 相关
+.dockerignore
+
+# 日志
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OpenClaw 数据（挂载卷）
+# openclaw-data/
+# openclaw-logs/
+
+# 临时文件
+tmp/
+temp/
+
+# 排除其他项目目录
+../数字库工厂_系统设计/
+../数字库工厂_系统设计_副本_20260210_122919/
+../预期算单证流程/
+../全渠道资金分析/
+../文档整理方案/
+../项目文件清单.md
+../../Downloads/
+../../Library/
+../../Movies/
+../../Music/
+../../Pictures/
+../../Public/
+../../VS Code/
+../../go/
+../../openclaw.zip
+../../openclaw_backup.sh
+../../tk.csv
+../../个人/
