@@ -6,19 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: openclaw-feishu
-    image: openclaw-feishu:latest
+    image: runsir/openclaw-feishu:latest
     restart: unless-stopped
 
-    # 环境变量配置
+    # 环境变量配置 - 自动加载 .env 文件中的所有变量
     env_file:
       - .env
-
-    # 自动升级配置（使用 .env 中的值）
-    environment:
-      - AUTO_UPDATE=${AUTO_UPDATE:-false}
-      - UPDATE_CHECK_INTERVAL=${UPDATE_CHECK_INTERVAL:-3600}
-      - INSTALL_CLAWHUB=${INSTALL_CLAWHUB:-true}
-      - SKILLS_LIST=${SKILLS_LIST:-}
 
     # 端口映射
     ports:
@@ -29,11 +22,6 @@ services:
     volumes:
       - openclaw-data:/root/.openclaw
       - openclaw-logs:/root/.openclaw/logs
-
-    # 网络配置（使用默认 bridge 网络）
-    # 如果需要自定义网络，取消下面的注释
-    # networks:
-    #   - openclaw-network
 
     # 健康检查
     healthcheck:
@@ -48,15 +36,6 @@ services:
     privileged: true
     cap_add:
       - NET_ADMIN
-
-networks:
-  openclaw-network:
-    driver: bridge
-
-# 如果需要自定义网络，取消下面的注释
-# networks:
-#   openclaw-network:
-#     driver: bridge
 
 volumes:
   openclaw-data:
