@@ -3,13 +3,24 @@ set -e
 
 echo "===== OpenClaw Docker 启动 ====="
 
+# ===== 配置 SSH root 密码 =====
+ROOT_PASSWORD=${ROOT_PASSWORD:-your-password-here}
+echo "[1/5] 配置 SSH root 密码..."
+if [ "$ROOT_PASSWORD" != "your-password-here" ]; then
+    echo "  使用 .env 中配置的密码"
+    echo "root:$ROOT_PASSWORD" | chpasswd
+else
+    echo "  警告: 使用默认密码，请修改 .env 中的 ROOT_PASSWORD"
+    echo "root:$ROOT_PASSWORD" | chpasswd
+fi
+
 # 启动 SSH 服务
-echo "[1/4] 启动 SSH 服务..."
+echo "  启动 SSH 服务..."
 mkdir -p /var/run/sshd
 /usr/sbin/sshd
 
 # 显示 Docker 容器 IP
-echo "[2/4] 容器网络信息:"
+echo "[2/5] 容器网络信息:"
 echo "  IP 地址: $(hostname -I | awk '{print $1}')"
 echo "  主机名: $(hostname)"
 
@@ -17,7 +28,7 @@ echo "  主机名: $(hostname)"
 INSTALL_CLAWHUB=${INSTALL_CLAWHUB:-true}
 SKILLS_LIST=${SKILLS_LIST:-}
 
-echo "[3/4] 安装 ClawHub..."
+echo "[3/5] 安装 ClawHub..."
 
 if command -v npx &> /dev/null; then
     if [ "$INSTALL_CLAWHUB" = "true" ]; then
@@ -64,13 +75,32 @@ else
     echo "  如需安装 Skills，请在 .env 中配置: SKILLS_LIST=brave,coding-agent,web-search"
 fi
 
+# ===== OpenClaw 初始化检查 =====
+OPENCLAW_CONFIG_FILE="/root/.openclaw/config.yaml"
+
+if [ ! -f "$OPENCLAW_CONFIG_FILE" ]; then
+    echo "[4/5] OpenClaw 首次启动，自动执行初始化配置..."
+    echo "  执行: openclaw onboard --install-daemon"
+    if openclaw onboard --install-daemon; then
+        echo "  ✓ OpenClaw 初始化成功！"
+    else
+        echo "  ✗ OpenClaw 初始化失败，但容器将继续运行"
+        echo "  请手动执行: openclaw onboard --install-daemon"
+    fi
+else
+    echo "[4/5] 检测到已有配置文件，跳过初始化步骤"
+fi
+
+# 创建日志目录
+mkdir -p /root/.openclaw/logs
+
 # ===== 自动升级功能 =====
 # 读取环境变量配置
 AUTO_UPDATE=${AUTO_UPDATE:-false}
 UPDATE_CHECK_INTERVAL=${UPDATE_CHECK_INTERVAL:-3600}
 
 if [ "$AUTO_UPDATE" = "true" ]; then
-    echo "[4/4] 自动升级已启用 (间隔: ${UPDATE_CHECK_INTERVAL}s)..."
+    echo "[5/5] 自动升级已启用 (间隔: ${UPDATE_CHECK_INTERVAL}s)..."
 
     # 后台运行自动升级检查
     (
@@ -88,66 +118,50 @@ if [ "$AUTO_UPDATE" = "true" ]; then
         done
     ) &
     AUTO_UPGRADE_PID=$!
-    echo "[4/4] 自动升级已启动 (PID: $AUTO_UPGRADE_PID)"
+    echo "[5/5] 自动升级已启动 (PID: $AUTO_UPGRADE_PID)"
 else
-    echo "[4/4] 自动升级已禁用 (AUTO_UPDATE=$AUTO_UPDATE)"
+    echo "[5/5] 自动升级已禁用 (AUTO_UPDATE=$AUTO_UPDATE)"
 fi
 
-# 检查 OpenClaw 是否已配置
-if [ ! -f "/root/.openclaw/config.yaml" ]; then
-    echo "OpenClaw 首次启动，自动执行初始化配置..."
+# ===== 启动 OpenClaw Gateway =====
+echo ""
+echo "===== 启动 OpenClaw Gateway ====="
 
-    # 自动运行 openclaw onboard --install-daemon
-    echo "  执行: openclaw onboard --install-daemon"
-    if openclaw onboard --install-daemon; then
-        echo "  ✓ OpenClaw 初始化成功！"
-    else
-        echo "  ✗ OpenClaw 初始化失败，但容器将继续运行"
-        echo "  请手动执行: openclaw onboard --install-daemon"
-    fi
-
+# 使用 trap 处理信号
+cleanup() {
     echo ""
-    echo "启动 OpenClaw Gateway..."
-else
-    echo "检测到已有配置文件，跳过初始化步骤"
-    echo "启动 OpenClaw Gateway..."
+    echo "收到停止信号，正在关闭服务..."
+    if [ -n "$OPENCLAW_PID" ]; then
+        kill -TERM "$OPENCLAW_PID" 2>/dev/null || true
+    fi
+    if [ -n "$AUTO_UPGRADE_PID" ]; then
+        kill -TERM "$AUTO_UPGRADE_PID" 2>/dev/null || true
+    fi
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
 
-    # 创建日志目录
-    mkdir -p /root/.openclaw/logs
+# 启动 OpenClaw Gateway，输出到 stdout（docker logs 可实时查看）
+echo "  启动命令: openclaw gateway run"
+openclaw gateway run > /proc/1/fd/1 2>&1 &
+OPENCLAW_PID=$!
 
-    # 使用 trap 处理信号
-    cleanup() {
-        echo "收到停止信号，正在关闭服务..."
-        if [ -n "$OPENCLAW_PID" ]; then
-            kill -TERM "$OPENCLAW_PID" 2>/dev/null || true
-        fi
-        if [ -n "$TAIL_PID" ]; then
-            kill -TERM "$TAIL_PID" 2>/dev/null || true
-        fi
-        exit 0
-    }
-    trap cleanup SIGTERM SIGINT
-
-    # 启动 OpenClaw Gateway，输出到 stdout（docker logs 可实时查看）
-    openclaw gateway run > /proc/1/fd/1 2>&1 &
-    OPENCLAW_PID=$!
-
-    echo "  OpenClaw Gateway PID: $OPENCLAW_PID"
-
-    # 监控 OpenClaw 进程，如意外退出则记录
-    while kill -0 "$OPENCLAW_PID" 2>/dev/null; do
-        sleep 5
-    done
-
-    echo "OpenClaw Gateway 已退出，退出码: $?"
-    exit 1
-fi
-
+echo "  ✓ OpenClaw Gateway PID: $OPENCLAW_PID"
 echo ""
 echo "===== 服务启动完成 ====="
-echo "  - SSH: 端口 22"
-echo "  - OpenClaw: 端口 18789"
+echo "  - SSH: 端口 ${SSH_PORT:-2222}"
+echo "  - OpenClaw Gateway: 端口 ${OPENCLAW_PORT:-18789}"
 echo "  - 自动升级: $AUTO_UPDATE"
 echo ""
 echo "查看日志: docker logs -f openclaw-feishu"
 echo "进入容器: docker exec -it openclaw-feishu bash"
+echo "SSH 登录: ssh root@<宿主机IP> -p ${SSH_PORT:-2222}"
+echo ""
+
+# 监控 OpenClaw 进程，如意外退出则记录
+while kill -0 "$OPENCLAW_PID" 2>/dev/null; do
+    sleep 5
+done
+
+echo "OpenClaw Gateway 已退出，退出码: $?"
+exit 1
