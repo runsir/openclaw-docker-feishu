@@ -1,46 +1,31 @@
 # GitHub Actions 配置说明
 
-本文档说明如何配置 GitHub Actions 自动构建并推送 Docker 镜像到阿里云容器镜像服务（ACR）。
+本文档说明如何配置 GitHub Actions 自动构建并推送 Docker 镜像到 Docker Hub。
 
 ## 前置准备
 
-### 1. 阿里云容器镜像服务（ACR）
+### 1. Docker Hub 账号
 
-如果没有阿里云容器镜像服务，请先创建：
+如果没有 Docker Hub 账号，请先注册：
 
-1. 登录阿里云控制台
-2. 进入「容器镜像服务」
-3. 创建个人版或企业版实例
-4. 创建命名空间（Namespace）和镜像仓库
+1. 访问 [Docker Hub](https://hub.docker.com/)
+2. 点击 "Sign Up" 注册账号
+3. 完成邮箱验证
 
-### 2. 获取阿里云访问凭证
+### 2. 创建 Access Token（推荐）
 
-#### 方式 1：使用阿里云 RAM 用户（推荐）
+为了安全起见，建议使用 Access Token 而不是密码：
 
-1. 登录阿里云控制台
-2. 进入「RAM 访问控制」
-3. 创建 RAM 用户
-4. 为用户授予 `AliyunContainerRegistryFullAccess` 权限
-5. 创建 AccessKey（AccessKey ID 和 AccessKey Secret）
+1. 登录 Docker Hub
+2. 点击右上角头像 -> **Account Settings**
+3. 选择 **Security** 标签
+4. 在 **Access Tokens** 部分点击 **New Access Token**
+5. 输入描述（如：GitHub Actions）
+6. 选择权限（建议选择：Read, Write, Delete）
+7. 点击 **Generate** 生成 Token
+8. **重要：复制并保存 Token**（只显示一次）
 
-#### 方式 2：使用容器镜像服务专用密码
-
-1. 登录阿里云容器镜像服务
-2. 点击右上角头像 -> 访问凭证
-3. 设置固定密码
-
-### 3. 获取镜像仓库地址
-
-镜像仓库地址格式：
-```
-registry.<region>.aliyuncs.com
-```
-
-常用区域：
-- 华东1（杭州）：`registry.cn-hangzhou.aliyuncs.com`
-- 华东2（上海）：`registry.cn-shanghai.aliyuncs.com`
-- 华南1（深圳）：`registry.cn-shenzhen.aliyuncs.com`
-- 华北2（北京）：`registry.cn-beijing.aliyuncs.com`
+> **注意**：也可以直接使用 Docker Hub 密码，但不推荐。
 
 ## GitHub Secrets 配置
 
@@ -55,33 +40,21 @@ registry.<region>.aliyuncs.com
 
 | Secret 名称 | 说明 | 示例值 |
 |------------|------|--------|
-| `ALIYUN_REGISTRY` | 阿里云镜像仓库地址 | `registry.cn-hangzhou.aliyuncs.com` |
-| `ALIYUN_USERNAME` | 阿里云用户名 | RAM 用户名或阿里云账号 |
-| `ALIYUN_PASSWORD` | 阿里云密码 | RAM AccessKey Secret 或固定密码 |
-| `IMAGE_NAMESPACE` | 命名空间（可选） | `your-namespace` 或 `library` |
+| `DOCKER_USERNAME` | Docker Hub 用户名 | `runsir` |
+| `DOCKER_PASSWORD` | Docker Hub 密码或 Access Token | `dckr_pat_xxxxx` |
 
 ### 配置示例
 
-1. **ALIYUN_REGISTRY**
+1. **DOCKER_USERNAME**
    ```
-   registry.cn-hangzhou.aliyuncs.com
-   ```
-
-2. **ALIYUN_USERNAME**
-   ```
-   your-aliyun-username
+   runsir
    ```
 
-3. **ALIYUN_PASSWORD**
+2. **DOCKER_PASSWORD**
    ```
-   your-access-key-secret-or-password
+   dckr_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
-
-4. **IMAGE_NAMESPACE**（可选）
-   ```
-   your-namespace
-   ```
-   如果不配置，默认使用 `library`
+   如果使用 Access Token，格式通常是 `dckr_pat_` 开头
 
 ## 镜像标签策略
 
@@ -105,7 +78,7 @@ GitHub Actions 会自动生成以下标签：
 ### 拉取镜像
 
 ```bash
-docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+docker pull runsir/openclaw-feishu:latest
 ```
 
 ### 使用 docker-compose
@@ -115,7 +88,7 @@ docker pull registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:lat
 ```yaml
 services:
   openclaw-feishu:
-    image: registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+    image: runsir/openclaw-feishu:latest
     # 不再需要 build 配置
 ```
 
@@ -127,7 +100,7 @@ docker run -d \
   -p 2222:22 \
   -p 18789:18789 \
   --env-file .env \
-  registry.cn-hangzhou.aliyuncs.com/your-namespace/openclaw-feishu:latest
+  runsir/openclaw-feishu:latest
 ```
 
 ## 触发构建
@@ -162,9 +135,9 @@ docker run -d \
 **错误信息**：`Error: denied: requested access to the resource is denied`
 
 **解决方案**：
-- 检查命名空间和镜像仓库是否存在
-- 确认 RAM 用户是否有推送权限
-- 检查 `IMAGE_NAMESPACE` 是否正确
+- 检查 Docker Hub 用户名是否正确
+- 确认 Access Token 或密码是否有效
+- 确认镜像名称是否存在拼写错误
 
 ### 3. 构建超时
 
@@ -205,13 +178,14 @@ docker run -d \
 ## 安全建议
 
 1. **不要在代码中硬编码密码**：始终使用 GitHub Secrets
-2. **定期轮换 AccessKey**：建议每 3-6 个月更新一次
-3. **使用 RAM 用户最小权限**：只授予必要的权限
-4. **启用镜像扫描**：在阿里云 ACR 中启用安全扫描
+2. **定期轮换 Access Token**：建议每 3-6 个月更新一次
+3. **使用最小权限**：Access Token 只授予必要的权限
+4. **启用镜像扫描**：在 Docker Hub 中启用安全扫描
 5. **使用镜像签名**：使用 Docker Content Trust 签名镜像
 
 ## 更多信息
 
 - [GitHub Actions 官方文档](https://docs.github.com/en/actions)
-- [阿里云容器镜像服务文档](https://help.aliyun.com/product/60716.html)
+- [Docker Hub 官方文档](https://docs.docker.com/docker-hub/)
 - [Docker Buildx 文档](https://docs.docker.com/buildx/working-with-buildx/)
+- [Docker Hub Access Token 文档](https://docs.docker.com/security/for-developers/access-tokens/)
